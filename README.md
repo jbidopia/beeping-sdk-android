@@ -104,7 +104,7 @@ import android.util.Log;
 
 * You must implement `BeepEventListener` interface as part of your `MainActivity` function, by adding `implements BeepEventListener`:
 ```
-public class MainActivity extends AppCompatActivity implements BeepEventListener {}
+public class MainActivity extends Activity implements BeepEventListener {}
 ```
 ![1.2](https://github.com/Beeping/beeping-assets/blob/master/android-sdk/configure/2.png?raw=true)
 Don't worry if you get this warning:
@@ -229,7 +229,7 @@ This method will respond with a Beep JSONObject (sample provided below).*
   import org.json.JSONObject;
   import android.util.Log;
 
-  public class MainActivity extends AppCompatActivity implements BeepEventListener {
+  public class MainActivity extends Activity implements BeepEventListener {
   
       BeepingCore beeping;
   
@@ -258,6 +258,121 @@ This method will respond with a Beep JSONObject (sample provided below).*
       }
       
   }
+```
+
+## Implementing Background Listening mode
+Beeping SDK allows you to keep detecting beeps even when the app is hidden in the background.
+
+#### 1. Create an Auto button
+* In your `MainActivity.java` class, add your desired button to toggle background listening:
+```
+import android.widget.Button;
+
+public class MainActivity extends Activity implements BeepEventListener {
+
+  private Button buttonAutoListen;
+
+  protected void onCreate() {
+    
+    // attach to correspoinding view
+    buttonAutoListen = (Button) findViewById(R.id.button_auto_listen);
+}
+```
+* In your `activity_main.xml` file, add your corresponding button view:
+```
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/relay_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
+    
+    <Button
+      android:id="@+id/button_auto_listen"
+      android:layout_width="50dp"
+      android:layout_height="30dp"
+      android:background="@drawable/button_auto_listen_off"
+      android:text="auto"
+      android:textAllCaps="false"
+      android:textColor="@color/colorCharcoal"
+      android:textSize="12sp"
+      android:alpha="0.0"/>
+      
+</RelativeLayout>
+```
+#### 2. Using SharedPreferences to save your Auto button state
+Your app MUST use Android's SharedPreferences as described below in our for the Beeping SDK to correctly handle background listening.
+Failure to do so can lead to failures when using background mode.
+* Use `autoListen` as the name of the SharedPreferences file.
+* Use `isAuto` as the key of the key-boolean pair saved into the above file.
+```
+import android.content.SharedPreferences;
+
+private boolean isBackgroundListening;
+
+public class MainActivity extends Activity implements BeepEventListener {
+
+  protected void onCreate() {
+
+    SharedPreferences sharedPrefsAuto = getSharedPreferences("autoListen", Context.MODE_PRIVATE);
+    SharedPreferences.Editor editor = sharedPrefsAuto.edit();
+    editor.putBoolean("isAuto", true);
+    editor.apply();
+    
+    SharedPreferences sharedPrefsAuto = getSharedPreferences("autoListen", Context.MODE_PRIVATE);
+    isBackgroundListening = sharedPrefsAuto.getBoolean("isAuto", false);
+  
+  }
+
+}
+  
+```
+```
+private boolean isBackgroundListening;
+
+public void setUpOnClicks() {
+
+  buttonAutoListen.setOnClickListener(new View.OnClickListener() {
+    
+    // button is OFF, turning ON //
+    if (!isBackgroundListening) {
+    
+      // change button's look
+      Drawable myDrawable = getResources().getDrawable(R.drawable.button_auto_listen_on);
+      int myColor = getResources().getColor(R.color.colorWhite);
+      buttonAutoListen.setBackground(myDrawable);
+      buttonAutoListen.setTextColor(myColor);
+      
+      // set flag "true"
+      isBackgroundListening = true;
+      
+      // set shared prefs for auto listen to "true"
+      SharedPreferences sharedPrefsAuto = getSharedPreferences("autoListen", Context.MODE_PRIVATE);
+      SharedPreferences.Editor editor = sharedPrefsAuto.edit();
+      editor.putBoolean("isAuto", true);
+      editor.apply();
+
+    // button is ON, turning OFF //
+    } else {
+    
+      // change button's look
+      Drawable myDrawable = getResources().getDrawable(R.drawable.button_auto_listen_off);
+      int myColor = getResources().getColor(R.color.colorCharcoal);
+      buttonAutoListen.setBackground(myDrawable);
+      buttonAutoListen.setTextColor(myColor);
+      
+      // set flag "false"
+      isBackgroundListening = false;
+      
+      // shared prefs for auto listen to "false"
+      SharedPreferences sharedPrefsAuto = getSharedPreferences("autoListen", Context.MODE_PRIVATE);
+      SharedPreferences.Editor editor = sharedPrefsAuto.edit();
+      editor.putBoolean("isAuto", false);
+      editor.apply();
+    }
+
+  });
+}
 ```
 
 ## Testing your Beeping-enabled App
