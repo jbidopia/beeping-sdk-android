@@ -300,33 +300,42 @@ public class MainActivity extends Activity implements BeepEventListener {
       
 </RelativeLayout>
 ```
-#### 2. Using SharedPreferences to save your Auto button state
+#### 2. Use SharedPreferences to save persistently
 Your app MUST use Android's SharedPreferences as described below in our for the Beeping SDK to correctly handle background listening.
 Failure to do so can lead to failures when using background mode.
 * Use `autoListen` as the name of the SharedPreferences file.
 * Use `isAuto` as the key of the key-boolean pair saved into the above file.
+
 ```
 import android.content.SharedPreferences;
 
-private boolean isBackgroundListening;
+private boolean isAuto;
 
 public class MainActivity extends Activity implements BeepEventListener {
 
   protected void onCreate() {
 
+    // create, edit and save to sharedPreferences
     SharedPreferences sharedPrefsAuto = getSharedPreferences("autoListen", Context.MODE_PRIVATE);
     SharedPreferences.Editor editor = sharedPrefsAuto.edit();
     editor.putBoolean("isAuto", true);
     editor.apply();
     
+    // retrieve sharedPreferences
     SharedPreferences sharedPrefsAuto = getSharedPreferences("autoListen", Context.MODE_PRIVATE);
-    isBackgroundListening = sharedPrefsAuto.getBoolean("isAuto", false);
+    isAuto = sharedPrefsAuto.getBoolean("isAuto", false);
   
   }
 
 }
   
 ```
+*For more info on how to use SharedPreferences, visit the Android Documentation: https://developer.android.com/reference/android/content/SharedPreferences.html*
+
+#### 3. Add clicking behavior to your button
+In `MainActivity.java`, implement the following:
+* Define a `Boolean` variable to store your button's state (`isBackgroundListening`).
+* Reflects button's state on your variable (`isBackgroundListening`) and the SharedPreferences file.
 ```
 private boolean isBackgroundListening;
 
@@ -372,6 +381,46 @@ public void setUpOnClicks() {
     }
 
   });
+}
+```
+#### 4. Add correct entry and exit behaviors for app
+* Start listening on app re-entry:
+```
+public BeepingCore beeping;
+
+@Override
+  protected void onResume() {
+    super.onResume();
+    AppController.getInstance().frontActivityMain();
+    if (beeping != null) {
+        
+        // start listening
+        beeping.startBeepingListen();
+    }
+
+    // fetch background listening state
+    SharedPreferences sharedPrefsAuto = getSharedPreferences("autoListen", Context.MODE_PRIVATE);
+    isAutoListen = sharedPrefsAuto.getBoolean("isAuto", false);
+    
+  }
+```
+* Stop listening on app exit ONLY when background mode OFF:
+```
+public BeepingCore beeping;
+private boolean isBackgroundListening;
+
+@Override
+  protected void onStop() {
+    super.onStop();
+    
+    // only stop listening if background mode OFF
+    if (isBackgroundListening == false) {
+      if (beeping != null) {
+      
+        // stop listening
+        beeping.stopBeepingListen();
+      }
+    }
 }
 ```
 
